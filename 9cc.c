@@ -8,6 +8,10 @@
 enum {
   TK_NUM = 256, // 整数トークン
   TK_EOF,       // 入力の終わりを表すトークン
+  TK_EQ,
+  TK_NE,
+  TK_LE,
+  TK_GE,
   ND_NUM = 256,
 };
 
@@ -17,6 +21,55 @@ typedef struct {
   int val;     // tyがTK_NUMの場合、その数値
   char *input; // トークン文字列（エラーメッセージ用）
 } Token;
+
+//可変長ベクタ
+typedef struct {
+  void **data;
+  int capacity;
+  int len;
+} Vector;
+
+//ベクタ生成関数
+Vector *new_vector() {
+  Vector *vec = malloc(sizeof(Vector));
+  vec->data = malloc(sizeof(void *) * 16);
+  vec->capacity = 16;
+  vec->len = 0;
+  return vec;
+}
+
+//ベクタにpush
+void vec_push(Vector *vec, void *elem) {
+  if (vec->capacity == vec->len) {
+    vec->capacity *= 2;
+    vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
+  }
+  vec->data[vec->len++] = elem;
+}
+
+//ベクタテスト用関数
+void expect(int line, int expected, int actual) {
+  if (expected == actual)
+    return;
+  fprintf(stderr, "%d: %d expected, but got %d\n",
+          line, expected, actual);
+  exit(1);
+}
+
+void runtest() {
+  Vector *vec = new_vector();
+  expect(__LINE__, 0, vec->len);
+
+  for (int i = 0; i < 100; i++)
+    vec_push(vec, (void *)i);
+
+  expect(__LINE__, 100, vec->len);
+  expect(__LINE__, 0, (long)vec->data[0]);
+  expect(__LINE__, 50, (long)vec->data[50]);
+  expect(__LINE__, 99, (long)vec->data[99]);
+
+  printf("OK\n");
+}
 
 // 入力プログラム
 char *user_input;
@@ -57,8 +110,40 @@ void tokenize() {
       p++;
       continue;
     }
+    
+    if (strncmp(p, "==", 2)==0) {
+      tokens[i].ty = TK_EQ;
+      tokens[i].input = p;
+      i++;
+      p += 2;
+      continue;
+    }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' ) {
+    if (strncmp(p, "!=", 2)==0) {
+      tokens[i].ty = TK_NE;
+      tokens[i].input = p;
+      i++;
+      p += 2;
+      continue;
+    }
+
+    if (strncmp(p, "<=", 2)==0) {
+      tokens[i].ty = TK_LE;
+      tokens[i].input = p;
+      i++;
+      p += 2;
+      continue;
+    }
+
+    if (strncmp(p, ">=", 2)==0) {
+      tokens[i].ty = TK_GE;
+      tokens[i].input = p;
+      i++;
+      p += 2;
+      continue;
+    }    
+    
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<') {
       tokens[i].ty = *p;
       tokens[i].input = p;
       i++;
@@ -151,7 +236,7 @@ Node *mul() {
   }
 }
 
-Node *expr() {
+Node *add() {
   Node *node = mul();
 
   for (;;) {
@@ -162,6 +247,39 @@ Node *expr() {
     else
       return node;
   }
+}
+
+Node *relational() {
+  Node *node = add();
+  for (;;) {
+    if (consume('<'))
+      node = new_node('<', node, add());
+    else if (consume('>'))
+      node = new_node('<', add(), node);
+    else if (consume(TK_LE))
+      node = new_node(TK_LE, node, add());
+    else if (consume(TK_GE))
+      node = new_node(TK_LE, add(), node);
+    else
+      return node;
+  }
+}
+
+Node *equality() {
+  Node *node = relational();
+  for (;;) {
+    if (consume(TK_EQ)){
+      node = new_node(TK_EQ, node, relational());
+    }
+    else if (consume(TK_NE))
+      node = new_node(TK_NE, node, relational());
+    else
+      return node;
+  }
+}
+
+Node *expr() {
+  return equality();
 }
 
 void gen(Node *node) {
@@ -189,6 +307,26 @@ void gen(Node *node) {
   case '/':
     printf("  cqo\n");
     printf("  idiv rdi\n");
+    break;
+  case TK_EQ:
+    printf("  cmp rax, rdi\n");
+    printf("  sete al\n");
+    printf("  movzb rax, al\n");
+    break;  
+  case '<':
+    printf("  cmp rax, rdi\n");
+    printf("  setl al\n");
+    printf("  movzb rax, al\n");
+    break;
+  case TK_LE:
+    printf("  cmp rax, rdi\n");
+    printf("  setle al\n");
+    printf("  movzb rax, al\n");
+    break;
+  case TK_NE:
+    printf("  cmp rax, rdi\n");
+    printf("  setne al\n");
+    printf("  movzb rax, al\n");
   }
 
   printf("  push rax\n");
@@ -198,6 +336,11 @@ int main(int argc, char **argv) {
   if (argc != 2) {
     error("引数の個数が正しくありません");
     return 1;
+  }
+
+  if (strncmp(argv[1], "-test",5)==0) {
+    runtest();
+    return 0;
   }
 
   // トークナイズしてパース
