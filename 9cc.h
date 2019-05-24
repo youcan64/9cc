@@ -12,6 +12,9 @@ enum {
   TK_NE,
   TK_LE,
   TK_GE,
+  TK_IDENT,
+  ND_IDENT,
+  CD_END,
   ND_NUM = 256,
 };
 
@@ -35,7 +38,15 @@ typedef struct Node {
   struct Node *lhs; // 左辺
   struct Node *rhs; // 右辺
   int val;          // tyがND_NUMの場合のみ使う
+  char name;        // tyがND_IDENTの場合のみ使う(変数を表す)
 } Node;
+
+typedef struct Code {
+  int ty;
+  struct Node *sent;
+  struct Code *next;
+} Code, *Codep;
+Codep firstcode;
 
 // 入力プログラム
 char *user_input;

@@ -56,9 +56,19 @@ void tokenize() {
       i++;
       p += 2;
       continue;
-    }    
+    } 
+
+    if ( 'a' <= *p && *p <= 'z'){
+      mytoken->ty = TK_IDENT;
+      mytoken->input = *p;
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
+      i++;
+      p++;
+      continue;
+    }
     
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<' || *p == '=' || *p == ';') {
       mytoken->ty = *p;
       mytoken->input = p;     
       mytoken->next = (Tokenp)malloc(sizeof(Token));
@@ -95,6 +105,13 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
   return node;
 }
 
+Node *new_node_name(char name) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IDENT;
+  node->name = name;
+  return node;
+}
+
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_NUM;
@@ -119,8 +136,14 @@ Node *term() {
     return node;
   }
 
+  // トークンが変数の場合
+  if (mytoken->ty == TK_IDENT) {
+    char name = mytoken->input;
+    mytoken = mytoken->next;
+    return new_node_name(name);
+  }
   // そうでなければ数値のはず
-  if (mytoken->ty == TK_NUM){
+  if (mytoken->ty == TK_NUM) {
     int val = mytoken->val;
     mytoken = mytoken->next;
     return new_node_num(val);
@@ -193,6 +216,31 @@ Node *equality() {
   }
 }
 
+Node *assign() {
+  Node *node = equality();
+  if (consume('='))
+    node = new_node('=', node, assign());
+  return node;
+}
+
 Node *expr() {
-  return equality();
+  return assign();
+}
+
+Node *stmt() {
+  Node *node = expr();
+  if (!consume(';'))
+    error_at(mytoken->input, "';'ではないトークンです");
+  return node;
+}
+
+Node program() {
+  firstcode = malloc(sizeof(Code));
+  Codep mycode = firstcode;
+  while (mytoken->ty != TK_EOF) {
+    mycode->sent = stmt();
+    mycode->next = malloc(sizeof(Code));
+    mycode = mycode->next;
+  }
+  mycode->ty = CD_END;
 }
