@@ -31,4 +31,11 @@ try 0 "3<=2"
 try 1 "(3<4)*(2>=-3)"
 try 0 "(1!=(3-2))/(1==1)"
 
+input="1"
+for i in `seq 120`
+do
+input+="+1"
+done
+try 121 "$input"
+
 echo OK

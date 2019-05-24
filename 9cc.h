@@ -16,11 +16,12 @@ enum {
 };
 
 // トークンの型
-typedef struct {
+typedef struct token{
   int ty;      // トークンの型
   int val;     // tyがTK_NUMの場合、その数値
   char *input; // トークン文字列（エラーメッセージ用）
-} Token;
+  struct token *next;
+} Token, *Tokenp;
 
 //可変長ベクタ
 typedef struct {

@@ -1,9 +1,7 @@
 #include "9cc.h"
 
-// トークナイズした結果のトークン列はこの配列に保存する
-// 100個以上のトークンは来ないものとする
-Token tokens[100];
-int pos = 0;
+Tokenp firstp;
+Tokenp mytoken;
 
 // user_inputが指している文字列を
 // トークンに分割してtokensに保存する
@@ -11,6 +9,8 @@ void tokenize() {
   char *p = user_input;
 
   int i = 0;
+  firstp = (Tokenp)malloc(sizeof(Token));
+  mytoken = firstp;
   while (*p) {
     // 空白文字をスキップ
     if (isspace(*p)) {
@@ -19,49 +19,61 @@ void tokenize() {
     }
     
     if (strncmp(p, "==", 2)==0) {
-      tokens[i].ty = TK_EQ;
-      tokens[i].input = p;
+      mytoken->ty = TK_EQ;
+      mytoken->input = p;
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       p += 2;
       continue;
     }
 
     if (strncmp(p, "!=", 2)==0) {
-      tokens[i].ty = TK_NE;
-      tokens[i].input = p;
+      mytoken->ty = TK_NE;
+      mytoken->input = p;      
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       p += 2;
       continue;
     }
 
     if (strncmp(p, "<=", 2)==0) {
-      tokens[i].ty = TK_LE;
-      tokens[i].input = p;
+      mytoken->ty = TK_LE;
+      mytoken->input = p;      
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       p += 2;
       continue;
     }
 
     if (strncmp(p, ">=", 2)==0) {
-      tokens[i].ty = TK_GE;
-      tokens[i].input = p;
+      mytoken->ty = TK_GE;
+      mytoken->input = p;
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       p += 2;
       continue;
     }    
     
     if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<') {
-      tokens[i].ty = *p;
-      tokens[i].input = p;
+      mytoken->ty = *p;
+      mytoken->input = p;     
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      tokens[i].ty = TK_NUM;
-      tokens[i].input = p;
-      tokens[i].val = strtol(p, &p, 10);
+      mytoken->ty = TK_NUM;
+      mytoken->input = p;
+      mytoken->val = strtol(p, &p, 10);
+      mytoken->next = (Tokenp)malloc(sizeof(Token));
+      mytoken = mytoken->next;
       i++;
       continue;
     }
@@ -69,8 +81,10 @@ void tokenize() {
     error_at(p, "トークナイズできません");
   }
 
-  tokens[i].ty = TK_EOF;
-  tokens[i].input = p;
+  mytoken->ty = TK_EOF;
+  mytoken->input = p;      
+  mytoken->next = NULL;
+  mytoken = firstp;
 }
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
@@ -89,9 +103,9 @@ Node *new_node_num(int val) {
 }
 
 int consume(int ty) {
-  if (tokens[pos].ty != ty) 
+  if (mytoken->ty != ty) 
     return 0;
-  pos++;
+  mytoken = mytoken->next;
   return 1;
 }
 
@@ -100,16 +114,19 @@ Node *term() {
   if (consume('(')) {
     Node *node = expr();
     if (!consume(')'))
-      error_at(tokens[pos].input,
+      error_at(mytoken->input,
                "開きカッコに対応する閉じカッコがありません");
     return node;
   }
 
   // そうでなければ数値のはず
-  if (tokens[pos].ty == TK_NUM)
-    return new_node_num(tokens[pos++].val);
+  if (mytoken->ty == TK_NUM){
+    int val = mytoken->val;
+    mytoken = mytoken->next;
+    return new_node_num(val);
+  }
 
-  error_at(tokens[pos].input,
+  error_at(mytoken->input,
            "数値でも開きカッコでもないトークンです");
 }
 
