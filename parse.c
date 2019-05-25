@@ -3,6 +3,12 @@
 Tokenp firstp;
 Tokenp mytoken;
 
+int is_alnum(char c) {
+  return ('a' <= c && c <= 'z') ||
+         ('A' <= c && c <= 'Z') ||
+         (c == '_');
+}
+
 // user_inputが指している文字列を
 // トークンに分割してtokensに保存する
 void tokenize() {
@@ -16,6 +22,19 @@ void tokenize() {
     if (isspace(*p)) {
       p++;
       continue;
+    }
+    
+    if (strncmp(p, "return", 6) == 0 ) {
+      if(is_alnum(p[6])){
+        error_at(p+6, "returnのうしろはスペースを開けてください"); 
+      }else{
+        mytoken->ty = TK_RETURN;
+        mytoken->input = p;
+        mytoken->next = (Tokenp)malloc(sizeof(Token));
+        i++;
+        p+=6;
+        continue;
+      }
     }
     
     if (strncmp(p, "==", 2)==0) {
@@ -228,13 +247,20 @@ Node *expr() {
 }
 
 Node *stmt() {
-  Node *node = expr();
+  Node *node;
+  if (consume(TK_RETURN)){
+    node = malloc(sizeof(Node));
+    node->lhs = expr();
+    node->ty = ND_RETURN;
+  } else {
+    node = expr();
+  }
   if (!consume(';'))
     error_at(mytoken->input, "';'ではないトークンです");
   return node;
 }
 
-Node program() {
+Node *program() {
   firstcode = malloc(sizeof(Code));
   Codep mycode = firstcode;
   while (mytoken->ty != TK_EOF) {

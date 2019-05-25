@@ -15,6 +15,8 @@ enum {
   TK_IDENT,
   ND_IDENT,
   CD_END,
+  TK_RETURN,
+  ND_RETURN,
   ND_NUM = 256,
 };
 
@@ -51,6 +53,7 @@ Codep firstcode;
 // 入力プログラム
 char *user_input;
 
+int is_alnum(char c);
 void vec_push(Vector *vec, void *elem);
 void expect(int line, int expected, int actual); 
 void runtest(); 
@@ -67,4 +70,5 @@ Node *add();
 Node *relational();
 Node *equality();
 Node *expr();
+Node *program();
 void gen(Node *node);
