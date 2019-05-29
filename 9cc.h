@@ -35,6 +35,16 @@ typedef struct {
   int len;
 } Vector;
 
+//マップ
+typedef struct {
+  Vector *keys;
+  Vector *vals;
+} Map;
+
+Map *new_map();
+void map_put(Map *map, char *key, void *val);
+void *map_get(Map *map, char *key);
+
 typedef struct Node {
   int ty;           // 演算子かND_NUM
   struct Node *lhs; // 左辺
