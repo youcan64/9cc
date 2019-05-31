@@ -41,5 +41,7 @@ try 121 "$input"
 try 5 '19;2+3;'
 try 10 'a=2;b=3;c=a+b;c*2;'
 try 14 "a=3;b=5*6-8;return a+b/2;"
+try 10 "foo=3;bar=14/2;return foo+bar;"
+try 5 "foo1=2;foo2=5;foo1=foo2;return foo1;"
 
 echo OK

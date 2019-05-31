@@ -14,6 +14,8 @@ int main(int argc, char **argv) {
   // トークナイズしてパース
   user_input = argv[1];
   tokenize();
+  ident_map = new_map();
+  ident_num = 0;
   Node *node = program();
 
   // アセンブリの前半部分を出力
@@ -24,7 +26,7 @@ int main(int argc, char **argv) {
   // 変数26個分の領域を確保する
   printf("  push rbp\n");
   printf("  mov rbp, rsp\n");
-  printf("  sub rsp, 208\n");
+  printf("  sub rsp, %d\n",ident_num*8);
 
   // 抽象構文木を下りながらコード生成
   Codep mycode = firstcode;

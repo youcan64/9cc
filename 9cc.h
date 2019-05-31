@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -24,6 +25,7 @@ enum {
 typedef struct token{
   int ty;      // トークンの型
   int val;     // tyがTK_NUMの場合、その数値
+  char *name;
   char *input; // トークン文字列（エラーメッセージ用）
   struct token *next;
 } Token, *Tokenp;
@@ -50,7 +52,7 @@ typedef struct Node {
   struct Node *lhs; // 左辺
   struct Node *rhs; // 右辺
   int val;          // tyがND_NUMの場合のみ使う
-  char name;        // tyがND_IDENTの場合のみ使う(変数を表す)
+  char *name;        // tyがND_IDENTの場合のみ使う(変数を表す)
 } Node;
 
 typedef struct Code {
@@ -62,6 +64,10 @@ Codep firstcode;
 
 // 入力プログラム
 char *user_input;
+
+// 変数名管理マップ
+Map *ident_map;
+int ident_num;
 
 int is_alnum(char c);
 void vec_push(Vector *vec, void *elem);

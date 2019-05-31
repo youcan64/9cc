@@ -4,7 +4,7 @@ void gen_lval(Node *node) {
   if (node->ty != ND_IDENT){
     error("左辺が変数ではありません");
   }
-  int offset = ('z' - node->name +1)*8;
+  int offset = ((int)map_get(ident_map, node->name) +1)*8;
   printf("  mov rax, rbp\n");
   printf("  sub rax, %d\n",offset);
   printf("  push rax\n");

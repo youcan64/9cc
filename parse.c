@@ -77,13 +77,24 @@ void tokenize() {
       continue;
     } 
 
-    if ( 'a' <= *p && *p <= 'z'){
+    if ( 'a' <= *p && *p <= 'z' || 'A' <= *p && *p <= 'Z'){
       mytoken->ty = TK_IDENT;
-      mytoken->input = *p;
+      char *start = p;
+      int offset = 1;
+      while(1){
+        p++;
+        if(!(is_alnum(*p) || '0' <= *p && *p <= '9')){
+          break;
+        } else {
+          offset++;
+        }
+      }
+      mytoken->name = malloc(sizeof(char)*(offset+1));
+      strncpy( mytoken->name, start, offset);
+      mytoken->name[offset] = '\0';
       mytoken->next = (Tokenp)malloc(sizeof(Token));
       mytoken = mytoken->next;
       i++;
-      p++;
       continue;
     }
     
@@ -124,10 +135,15 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
   return node;
 }
 
-Node *new_node_name(char name) {
+
+Node *new_node_name(char *name) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
   node->name = name;
+  if(!map_get(ident_map,name)){
+    map_put(ident_map, name, (void *)ident_num);
+    ident_num++;
+  }
   return node;
 }
 
@@ -157,7 +173,7 @@ Node *term() {
 
   // トークンが変数の場合
   if (mytoken->ty == TK_IDENT) {
-    char name = mytoken->input;
+    char *name = mytoken->name;
     mytoken = mytoken->next;
     return new_node_name(name);
   }
